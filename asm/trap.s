@@ -19,8 +19,8 @@ asm_trap_vector:
     sd 	t2, 88(sp)	# Temporary
     sd 	t3, 96(sp)	# Temporary
     sd 	t4, 104(sp)	# Temporary
-    # sd 	t5, 112(sp)	# Temporary
-    # sd 	t6, 120(sp)	# Temporary
+    sd 	t5, 112(sp)	# Temporary
+    sd 	t6, 120(sp)	# Temporary
 
     csrrw   t6, mscratch, t6
 
@@ -58,8 +58,8 @@ asm_trap_vector:
     ld	 t2, 88(sp)	    # Temporary
     ld	 t3, 96(sp)	    # Temporary
     ld	 t4, 104(sp)	# Temporary
-    # ld	 t5, 112(sp)	# Temporary
-    # ld	 t6, 120(sp)	# Temporary
+    ld	 t5, 112(sp)	# Temporary
+    ld	 t6, 120(sp)	# Temporary
 
     addi sp, sp, 128
 

@@ -1,11 +1,8 @@
 #include "print.h"
-#include "app.h"
 
-extern "C" int app() {
+extern "C" int app(int num) {
     const char *msg = "Anthony\n";
     print(msg);
-
-    __asm__("ecall");
 
     return 0;
 }

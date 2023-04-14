@@ -1,11 +1,7 @@
-//
-// Created by anthony_kamers on 07/04/23.
-//
-
 #ifndef SWITCH_CONTEXT_MACHINE_MODE_PRINT_H
 #define SWITCH_CONTEXT_MACHINE_MODE_PRINT_H
 
-typedef unsigned long long uint64;
+#include "config.h"
 
 static const int UART_REG_TXFIFO = 0;
 static volatile int *uart = (int *)(void *)0x10000000;
