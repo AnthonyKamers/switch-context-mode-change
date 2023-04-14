@@ -26,6 +26,7 @@ uint64_t timer_handler(uint64_t epc) {
     print(message, ++timer_count);
 
     // call schedule function here
+    // asm("jal before_context_switch");
 
     // enable machine-mode timer interrupts
     init_timer();

@@ -25,25 +25,33 @@ typedef struct {
     process_t process[MAX_PROCESSES];
 } scheduler_t;
 
-static kernel_stack_pointer;
+//typedef struct context {
+//    reg_t ra;
+//    reg_t sp;
+//
+//    // callee-saved
+//    reg_t s0;
+//    reg_t s1;
+//    reg_t s2;
+//    reg_t s3;
+//    reg_t s4;
+//    reg_t s5;
+//    reg_t s6;
+//    reg_t s7;
+//    reg_t s8;
+//    reg_t s9;
+//    reg_t s10;
+//    reg_t s11;
+//} context_t;
+
 scheduler_t scheduler;
-//extern "C" process_t kernel_stack;
-
-uint64_t * _get_stack_pointer() {
-    // load instructions (assembly) to take the actual sp
-    return 0;
-}
-
-void after_context_switch(volatile unsigned int **old_sp, volatile unsigned int **to_sp) {
-    // get registers from stack and clean it
-}
 
 void schedule() {
     int current_id = scheduler.current_id;
     int next_id = NEXT_PROCESS(current_id);
 
     // current sp
-    scheduler.process[next_id].stack = _get_stack_pointer();
+    // scheduler.process[next_id].stack = _get_stack_pointer();
 
     // print SATP of next process
     int satp = *(scheduler.process[next_id].stack + 14);
@@ -137,7 +145,7 @@ extern "C" int main() {
     }
 
     // make_process();
-//    create_process(process1_entry);
+//    create_process(&process1_entry);
 //    create_process(process2_entry);
 
     halt();
