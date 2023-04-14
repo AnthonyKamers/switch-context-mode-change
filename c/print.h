@@ -13,6 +13,7 @@ extern "C" void print(uint64 a0);
 
 // print function for c code
 void print(const char *s);
+void print(const char *s, int num);
 
 
 #endif //SWITCH_CONTEXT_MACHINE_MODE_PRINT_H

@@ -70,13 +70,19 @@ _start:
     # 1 << 1    : Supervisor's interrupt-enable bit will be set to 1 after sret.
     # We set the "previous" bits because the sret will write the current bits
     # with the previous bits.
-    li		t0, (0b11 << 11) | (1 << 8) | (1 << 5) | (1 << 7)
+    li		t0, (0b11 << 11) | (1 << 8) | (1 << 5) | (1 << 7) | (1 << 3)
     csrw	mstatus, t0
 
     la		t1, main
     csrw	mepc, t1
 
-    # set the MTIME interval to 1 second
+    # kinit() is required to return back the SATP value (including MODE) via a0
+    csrw	satp, a0
+
+    # init timer
+    jal       init_timer
+
+    # set the MTIME interval to 1 second (qemu does not implement)
     # li      t0, 0x1000000
     # csrw    mtimecmp, t0
 
@@ -84,11 +90,12 @@ _start:
     # 1 << 1   : Software interrupt delegated to supervisor mode
     # 1 << 5   : Timer interrupt delegated to supervisor mode
     # 1 << 9   : External interrupt delegated to supervisor mode
+    # 1 << 7   : Timer Interrupt
     # By default all traps (interrupts or exceptions) automatically
     # cause an elevation to the machine privilege mode (mode 3).
     # When we delegate, we're telling the CPU to only elevate to
     # the supervisor privilege mode (mode 1)
-    li		t2, (1 << 1) | (1 << 5) | (1 << 9)
+    li		t2, (1 << 1) | (1 << 5) | (1 << 9) | (1 << 7)
     csrw	mideleg, t2
 
     # Setting `sie` (supervisor interrupt enable) register:
@@ -104,9 +111,6 @@ _start:
     # 01        : Asynchronous interrupts set pc to BASE + 4 x scause
     la		t3, asm_trap_vector
     csrw	mtvec, t3
-
-    # kinit() is required to return back the SATP value (including MODE) via a0
-    csrw	satp, a0
 
     # Force the CPU to take our SATP register.
     # To be efficient, if the address space identifier (ASID) portion of SATP is already

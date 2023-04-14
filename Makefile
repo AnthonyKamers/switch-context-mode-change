@@ -12,33 +12,38 @@ SOURCES_MMU_H=$(wildcard mmu/*.h)
 LINKER=virt.ld
 
 QEMU=qemu-system-riscv64
-MACH=sifive_u
 
+########################### sifive_u ###########################
+#FLAGS_GCC:=-march=rv64gc -mabi=lp64d -Wl, -mno-relax -mcmodel=medany
+#MACHINE=sifive_u
+#CPUS=2
+#LIB=
+#FLAGS_QEMU=-ex "target extended-remote:1234" -ex "add-inferior" -ex "inferior 2" -ex "attach 2"
+
+########################### virt ###########################
+FLAGS_GCC:=-march=rv64g -mabi=lp64d -static -mcmodel=medany
+MACHINE=virt
+CPUS=1
 LIB= -lgcc
+FLAGS_QEMU=-ex "target remote:1234"
 
 
 default:
-	$(RISCV64)g++ -g -march=rv64g -mabi=lp64d -static -mcmodel=medany \
+	$(RISCV64)g++ -g $(FLAGS_GCC) \
 	-fvisibility=hidden -nostdlib -nostartfiles -T $(LINKER) -o $(FILE).bin \
 	$(SOURCES_ASM) $(SOURCES_H) $(SOURCES_C) $(SOURCES_MMU_H) $(SOURCES_MMU) \
 	$(LIB) -w
 
 start:
-	@qemu-system-riscv64 -nographic -machine virt -bios none -kernel $(FILE).bin
-
-start_asm:
-	@qemu-system-riscv64 -nographic -machine virt -bios none -kernel $(FILE).bin -d in_asm
+	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin
 
 clean:
 	@rm -f *.bin
 
 debug:
-	@qemu-system-riscv64 -nographic -machine virt -bios none -kernel $(FILE).bin \
-	-gdb tcp::1234 -S & $(TERMINAL) $(RISCV64)gdb -ex "target remote:1234" \
-	-ex "set confirm off" -ex "add-symbol-file ./$(FILE).bin 0x80000000"
+	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin \
+	-gdb tcp::1234 -S & $(TERMINAL) $(RISCV64)gdb $(FLAGS_QEMU) \
+	-ex "set confirm off" \
+	-ex "add-symbol-file ./$(FILE).bin 0x80000000"
 
 	lsof -t -i :1234 | xargs kill -9
-
-boot-only:
-	$(RISCV64)gcc -g -march=rv64g -mabi=lp64d -static -mcmodel=medany \
-	-fvisibility=hidden -nostdlib -nostartfiles -Tvirt.ld -o boot.bin boot.s trap.s print.s

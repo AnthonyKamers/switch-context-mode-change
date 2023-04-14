@@ -15,3 +15,9 @@ extern "C" void print(uint64 a0) {
 void print(const char *s) {
 	while (*s) putchar(*s++);
 }
+
+void print(const char *s, int num) {
+    print(s);
+    putchar(num + '0');
+    print("\n");
+}

@@ -25,6 +25,7 @@ typedef struct {
     process_t process[MAX_PROCESSES];
 } scheduler_t;
 
+static kernel_stack_pointer;
 scheduler_t scheduler;
 //extern "C" process_t kernel_stack;
 
@@ -130,15 +131,15 @@ extern "C" int kinit() {
 }
 
 extern "C" int main() {
-    const char * message = "main\n";
-    print(message);
+    while (TRUE) {
+        const char * message = "main\n";
+        print(message);
+    }
 
     // make_process();
 //    create_process(process1_entry);
 //    create_process(process2_entry);
 
     halt();
-//    create_process(process1_entry);
-//    create_process(process2_entry);
-//    halt();
+    return 0;
 }
