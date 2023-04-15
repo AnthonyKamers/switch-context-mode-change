@@ -23,7 +23,7 @@ QEMU=qemu-system-riscv64
 ########################### virt ###########################
 FLAGS_GCC:=-march=rv64g -mabi=lp64d -static -mcmodel=medany
 MACHINE=virt
-CPUS=1
+CPUS=4
 LIB= -lgcc
 FLAGS_QEMU=-ex "target remote:1234"
 
@@ -41,7 +41,7 @@ clean:
 	@rm -f *.bin
 
 debug:
-	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin \
+	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin -D log.log -d mmu,int \
 	-gdb tcp::1234 -S & $(TERMINAL) $(RISCV64)gdb $(FLAGS_QEMU) \
 	-ex "set confirm off" \
 	-ex "add-symbol-file ./$(FILE).bin 0x80000000"

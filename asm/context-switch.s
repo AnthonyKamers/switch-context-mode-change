@@ -39,8 +39,8 @@
 # ============ Macro END   ==================
 
 
-.global context_sditch
-context_sditch:
+.global context_switch
+context_switch:
     ctx_save    a0  # a0 => save old context
     ctx_load    a1  # a1 => load new context
-    ret             # pc=ra => sditch to new process
+    mret            # pc=ra => switch to new process

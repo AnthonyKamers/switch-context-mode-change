@@ -1,11 +1,19 @@
 .option norvc
 
+.equ STACK_SIZE, 8192
+
 .section .text.init
 .global _start
 _start:
+    # setup stacks per hart
+    csrr	t0, mhartid
+    slli    t0, t0, 10                  # shift left the hart id by 1024
+    la      sp, stacks + STACK_SIZE      # set initial stack pointer to the end of the stack space
+    add     sp, sp, t0                  # move the current hart stack pointer to its place in the stack space
+
 	# Any hardware threads (hart) that are not bootstrapping
 	# need to wait for an IPI
-	csrr	t0, mhartid
+	csrr    t0, mhartid
 	bnez	t0, halt
 
 	# SATP should be zero, but let's make sure
@@ -22,6 +30,7 @@ _start:
 	la	    a1, _bss_end
 	bgeu	a0, a1, 2f
 
+# clear bss
 1:	sd	    zero, (a0)
 	addi	a0, a0, 8
 	bltu	a0, a1, 1b
@@ -31,7 +40,7 @@ _start:
 	# li	t5, 0xffff;
 	# csrw	medeleg, t5
 	# csrw	mideleg, t5
-	la	    sp, _stack_end
+	# la	    sp, _stack_end          # set initial stack pointer
 
 	# We use mret here so that the mstatus register
 	# is properly updated.
@@ -80,7 +89,7 @@ _start:
     csrw	satp, a0
 
     # init timer
-    jal       init_timer
+    # jal       init_timer
 
     # set the MTIME interval to 1 second (qemu does not implement)
     # li      t0, 0x1000000
@@ -126,3 +135,6 @@ _start:
 halt:
     wfi
 	j	halt
+
+stacks:
+    .skip STACK_SIZE * 4            # allocate space for the harts stacks

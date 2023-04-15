@@ -15,6 +15,14 @@ extern "C" void init_timer() {
     *mtimecmp = *mtime + (TIMER_INTERRUPTION_SECONDS * 10000000);
 }
 
+void delay(double seconds) {
+    volatile uint64* mtime =  reinterpret_cast<uint64*>(MTIME);
+    uint64 mtime_next = *mtime + (seconds * 1000000);
+
+    // idle waiting (busy waiting)
+    while (*mtime <= mtime_next) {}
+}
+
 uint64_t timer_handler(uint64_t epc) {
     uint64_t return_pc = epc;
 

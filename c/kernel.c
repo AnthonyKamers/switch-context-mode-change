@@ -1,6 +1,7 @@
 #include "config.h"
 #include "print.h"
 #include "utils.h"
+#include "timer.h"
 #include "../mmu/mmu.h"
 #include "../mmu/mem.h"
 #include "../mmu/kmem.h"
@@ -13,94 +14,80 @@
 extern "C" void halt();
 extern char* KERNEL_TABLE;
 
-typedef struct stack {
-    volatile uint64_t * stack;
-    volatile uint64_t * satp;
-    uint64_t stack_base[MAX_STACK];
-} process_t;
-
-typedef struct {
-    unsigned int length;
-    volatile unsigned int current_id;
-    process_t process[MAX_PROCESSES];
-} scheduler_t;
-
-//typedef struct context {
-//    reg_t ra;
-//    reg_t sp;
+//typedef struct stack {
+//    volatile uint64_t * stack;
+//    volatile uint64_t * satp;
+//    uint64_t stack_base[MAX_STACK];
+//} process_t;
 //
-//    // callee-saved
-//    reg_t s0;
-//    reg_t s1;
-//    reg_t s2;
-//    reg_t s3;
-//    reg_t s4;
-//    reg_t s5;
-//    reg_t s6;
-//    reg_t s7;
-//    reg_t s8;
-//    reg_t s9;
-//    reg_t s10;
-//    reg_t s11;
-//} context_t;
+//typedef struct {
+//    unsigned int length;
+//    volatile unsigned int current_id;
+//    process_t process[MAX_PROCESSES];
+//} scheduler_t;
 
-scheduler_t scheduler;
+uint8_t process_stack[MAX_PROCESSES][MAX_STACK];
 
-void schedule() {
-    int current_id = scheduler.current_id;
-    int next_id = NEXT_PROCESS(current_id);
+typedef struct context {
+    uint64_t ra;
+    uint64_t sp;
 
-    // current sp
-    // scheduler.process[next_id].stack = _get_stack_pointer();
+    // callee-saved
+    uint64_t s0;
+    uint64_t s1;
+    uint64_t s2;
+    uint64_t s3;
+    uint64_t s4;
+    uint64_t s5;
+    uint64_t s6;
+    uint64_t s7;
+    uint64_t s8;
+    uint64_t s9;
+    uint64_t s10;
+    uint64_t s11;
+} context_t;
 
-    // print SATP of next process
-    int satp = *(scheduler.process[next_id].stack + 14);
-    print(satp);
+extern "C" void context_switch(context_t *context_old, context_t *context_new);
 
-    // do context switch
-    scheduler.current_id = next_id;
-    // after_context_switch(); // fix and uncomment
+context_t context_os;
+context_t context_process[MAX_PROCESSES];
+context_t * context_now;
+int task_top = 0;   // total number of processes
+
+int create_process(void (*process)(void)) {
+    int i = task_top++;
+    context_process[i].ra = (uint64_t) process;
+    context_process[i].sp = (uint64_t) &process_stack[i][MAX_STACK - 1];
+    return i;
 }
 
-void create_process(void *process_entry) {
-    unsigned int id = scheduler.length;
-    scheduler.process[id].stack = scheduler.process[id].stack_base + (MAX_STACK - 1);
-
-    // push arguments to the stack
-    *scheduler.process[id].stack-- = *((unsigned int*)(&process_entry));    // PC
-    *scheduler.process[id].stack-- = get_mstatus();                         // mstatus
-    *scheduler.process[id].stack-- = make_process_pagetable();              // SATP
-    // *scheduler.task[id].stack-- = 0;                                        // ra
-    *scheduler.process[id].stack-- = 0;                                        // s0
-    *scheduler.process[id].stack-- = 0;                                        // s1
-    *scheduler.process[id].stack-- = 0;                                        // a0
-    *scheduler.process[id].stack-- = 0;                                        // a1
-    *scheduler.process[id].stack-- = 0;                                        // a2
-    *scheduler.process[id].stack-- = 0;                                        // a3
-    *scheduler.process[id].stack-- = 0;                                        // a4
-
-    // increase scheduler process length
-    scheduler.length++;
+void process_go(int i) {
+    context_now = &context_process[i];
+    context_switch(&context_os, &context_process[i]);
 }
 
-int process1_entry() {
+void process_os() {
+    context_t * context = context_now;
+    context_now = &context_os;
+    context_switch(context, &context_os);
+}
+
+void process1_entry(void) {
     const char * message = "process1";
-    while (TRUE)
+    while (TRUE) {
         print(message);
-    return 0;
+        delay(0.5);
+        process_os();
+    }
 }
 
-int process2_entry() {
+void process2_entry(void) {
     const char * message = "process2";
-    while (TRUE)
+    while (TRUE) {
         print(message);
-    return 0;
-}
-
-void make_process() {
-    char * page_allocated = zalloc(64);
-    uint64_t satp_transfer = char_to_satp(page_allocated);
-    set_satp(satp_transfer);
+        delay(0.5);
+        process_os();
+    }
 }
 
 extern "C" int kinit() {
@@ -139,14 +126,18 @@ extern "C" int kinit() {
 }
 
 extern "C" int main() {
-    while (TRUE) {
-        const char * message = "main\n";
-        print(message);
-    }
+    create_process(&process1_entry);
+    create_process(&process2_entry);
 
-    // make_process();
-//    create_process(&process1_entry);
-//    create_process(process2_entry);
+    int current_process = 0;
+    while (TRUE) {
+        print("OS activate next process;\n");
+        process_go(current_process);
+        print("Back to OS\n");
+
+        current_process = NEXT_PROCESS(current_process);
+        print("\n");
+    }
 
     halt();
     return 0;
