@@ -12,6 +12,7 @@
 
 extern "C" void halt();
 extern char* KERNEL_TABLE;
+extern "C" void after_context_switch(volatile uint64_t **from_sp, volatile uint64_t **to_sp);
 
 typedef struct stack {
     volatile uint64_t * stack;
@@ -25,52 +26,48 @@ typedef struct {
     process_t process[MAX_PROCESSES];
 } scheduler_t;
 
-//typedef struct context {
-//    reg_t ra;
-//    reg_t sp;
-//
-//    // callee-saved
-//    reg_t s0;
-//    reg_t s1;
-//    reg_t s2;
-//    reg_t s3;
-//    reg_t s4;
-//    reg_t s5;
-//    reg_t s6;
-//    reg_t s7;
-//    reg_t s8;
-//    reg_t s9;
-//    reg_t s10;
-//    reg_t s11;
-//} context_t;
-
 scheduler_t scheduler;
+process_t kernel_stack;
 
-void schedule() {
+extern "C" void init_kernel_stack(volatile uint64_t * satp) {
+    kernel_stack.satp = satp;
+    kernel_stack.stack = kernel_stack.stack_base + (MAX_STACK - 1);
+    asm("mv sp, %0" : : "r"(kernel_stack.stack):);
+}
+
+extern "C" void init_process() {
+    const int main_id = 0;
+    scheduler.length = 1;
+    scheduler.current_id = main_id;
+    scheduler.process[main_id].stack = scheduler.process[main_id].stack_base + (MAX_STACK - 1);
+    asm("mv sp, %0" : : "r"(scheduler.process[main_id].stack):);
+}
+
+extern "C" void schedule(uint64_t * sp_now) {
     int current_id = scheduler.current_id;
     int next_id = NEXT_PROCESS(current_id);
 
-    // current sp
-    // scheduler.process[next_id].stack = _get_stack_pointer();
+    // current sp (old process)
+//    uint64_t* sp;
+//    get_sp(sp);
+     scheduler.process[next_id].stack = sp_now;
 
     // print SATP of next process
-    int satp = *(scheduler.process[next_id].stack + 14);
-    print(satp);
+    int satp = *(scheduler.process[next_id].stack + 8);
+    // print("SATP: ", satp);
 
     // do context switch
     scheduler.current_id = next_id;
-    // after_context_switch(); // fix and uncomment
+    after_context_switch(&scheduler.process[current_id].stack, &scheduler.process[next_id].stack);
 }
 
-void create_process(void *process_entry) {
+void create_process(void (*process_entry)(void), uint64_t satp) {
     unsigned int id = scheduler.length;
     scheduler.process[id].stack = scheduler.process[id].stack_base + (MAX_STACK - 1);
 
     // push arguments to the stack
-    *scheduler.process[id].stack-- = *((unsigned int*)(&process_entry));    // PC
-    *scheduler.process[id].stack-- = get_mstatus();                         // mstatus
-    *scheduler.process[id].stack-- = make_process_pagetable();              // SATP
-    // *scheduler.task[id].stack-- = 0;                                        // ra
+    *scheduler.process[id].stack-- = (uint64_t) process_entry;                  // PC
+    *scheduler.process[id].stack-- = satp;                                      // SATP
     *scheduler.process[id].stack-- = 0;                                        // s0
     *scheduler.process[id].stack-- = 0;                                        // s1
     *scheduler.process[id].stack-- = 0;                                        // a0
@@ -78,30 +75,29 @@ void create_process(void *process_entry) {
     *scheduler.process[id].stack-- = 0;                                        // a2
     *scheduler.process[id].stack-- = 0;                                        // a3
     *scheduler.process[id].stack-- = 0;                                        // a4
+    *scheduler.process[id].stack = 0;
 
     // increase scheduler process length
     scheduler.length++;
 }
 
-int process1_entry() {
+void process1_entry(void) {
     const char * message = "process1";
     while (TRUE)
         print(message);
-    return 0;
 }
 
-int process2_entry() {
+void process2_entry(void) {
     const char * message = "process2";
     while (TRUE)
         print(message);
-    return 0;
 }
 
-void make_process() {
-    char * page_allocated = zalloc(64);
-    uint64_t satp_transfer = char_to_satp(page_allocated);
-    set_satp(satp_transfer);
-}
+//void make_process() {
+//    char * page_allocated = zalloc(64);
+//    uint64_t satp_transfer = char_to_satp(page_allocated);
+//    set_satp(satp_transfer);
+//}
 
 extern "C" int kinit() {
     const char * message = "kinit\n";
@@ -139,15 +135,15 @@ extern "C" int kinit() {
 }
 
 extern "C" int main() {
+    uint64_t satp0 = make_process_pagetable();
+    create_process(&process1_entry, satp0);
+
+    uint64_t satp1 = make_process_pagetable();
+    create_process(&process2_entry, satp1);
+
     while (TRUE) {
-        const char * message = "main\n";
-        print(message);
+        print("0000000000\n");
+        halt();
     }
-
-    // make_process();
-//    create_process(&process1_entry);
-//    create_process(process2_entry);
-
-    halt();
     return 0;
 }

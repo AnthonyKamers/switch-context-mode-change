@@ -42,6 +42,9 @@ extern "C" uint64 m_trap(uint64 mepc, uint64 mtval, uint64 mcause, uint64 mhart,
             case 5:
                 msg = "Load Access Fault\n";
                 break;
+            case 7:
+                msg = "store access fault\n";
+                break;
             case 8:
                 msg = "Call from user-mode\n";
                 break;

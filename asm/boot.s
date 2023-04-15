@@ -73,15 +73,6 @@ _start:
     li		t0, (0b11 << 11) | (1 << 8) | (1 << 5) | (1 << 7) | (1 << 3)
     csrw	mstatus, t0
 
-    la		t1, main
-    csrw	mepc, t1
-
-    # kinit() is required to return back the SATP value (including MODE) via a0
-    csrw	satp, a0
-
-    # init timer
-    jal       init_timer
-
     # set the MTIME interval to 1 second (qemu does not implement)
     # li      t0, 0x1000000
     # csrw    mtimecmp, t0
@@ -118,6 +109,30 @@ _start:
     # it in memory, it will be the old table. So, sfence.vma will ensure that the MMU always
     # grabs a fresh copy of the SATP register and associated tables.
     sfence.vma
+
+    # memory protection
+    #li      t0, 0x90000000
+    #srli    t0, t0, 2
+    #csrw    pmpaddr0, t0
+
+    #li      t0, 0x0707070F
+    #csrw    pmpcfg0, t0
+
+    # kinit() is required to return back the SATP value (including MODE) via a0
+    csrw	satp, a0
+
+    # configure kernel stack pointer (and satp)
+    jal     init_kernel_stack
+
+    # init timer
+    jal     init_timer
+
+    # configure initial user stack
+    jal     init_process
+
+    # configure main as return address
+    la		t1, main
+    csrw	mepc, t1
 
     # sret will put us in supervisor mode and re-enable interrupts
     mret

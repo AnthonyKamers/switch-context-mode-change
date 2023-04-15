@@ -39,8 +39,43 @@
 # ============ Macro END   ==================
 
 
-.global context_sditch
-context_sditch:
-    ctx_save    a0  # a0 => save old context
-    ctx_load    a1  # a1 => load new context
-    ret             # pc=ra => sditch to new process
+#.global context_switch
+#context_switch:
+#    ctx_save    a0  # a0 => save old context
+#    ctx_load    a1  # a1 => load new context
+#    ret             # pc=ra => switch to new process
+
+.global before_context_switch
+before_context_switch:
+    # save mepc and satp
+    csrr    t0, mepc
+    csrr    t1, satp
+
+    # save in stack
+    addi    sp, sp, -16
+    sd      t0, 0(sp)
+    sd      t1, 8(sp)
+
+    mv      a0, sp
+    j       schedule
+    ret
+
+.global after_context_switch
+after_context_switch:
+    # store sp into PCB of old process
+    addi    sp, sp, -8
+    sd      a0, 0(sp)
+
+    # load sp from PCB of new process
+    mv      sp, a1
+
+    # load mepc and satp that was saved previously
+    ld      t0, 0(sp)   # mepc
+    ld      t1, 8(sp)   # satp
+
+    # write to correct registers
+    csrw    mepc, t0
+    csrw    satp, t1
+
+    # adjust stack pointer
+    addi    sp, sp, 16
