@@ -14,12 +14,14 @@ extern "C" void halt();
 extern char* KERNEL_TABLE;
 extern "C" void after_context_switch(volatile uint64_t **from_sp, volatile uint64_t **to_sp);
 
+// PCB
 typedef struct stack {
     volatile uint64_t * stack;
     volatile uint64_t * satp;
     uint64_t stack_base[MAX_STACK];
 } process_t;
 
+// Scheduler
 typedef struct {
     unsigned int length;
     volatile unsigned int current_id;
@@ -28,6 +30,14 @@ typedef struct {
 
 scheduler_t scheduler;
 process_t kernel_stack;
+
+extern "C" void switch_kernel_stack() {
+    asm("mv sp, %0" : : "r"(kernel_stack.stack):);
+}
+
+extern "C" void switch_user_stack() {
+    asm("mv sp, %0" : : "r"(scheduler.process[scheduler.current_id].stack):);
+}
 
 extern "C" void init_kernel_stack(volatile uint64_t * satp) {
     kernel_stack.satp = satp;
@@ -43,22 +53,26 @@ extern "C" void init_process() {
     asm("mv sp, %0" : : "r"(scheduler.process[main_id].stack):);
 }
 
-extern "C" void schedule(uint64_t * sp_now) {
+extern "C" void schedule() {
     int current_id = scheduler.current_id;
     int next_id = NEXT_PROCESS(current_id);
 
     // current sp (old process)
-//    uint64_t* sp;
-//    get_sp(sp);
-     scheduler.process[next_id].stack = sp_now;
+    uint64_t* sp;
+    get_sp(sp);
+    scheduler.process[next_id].stack = sp;
 
     // print SATP of next process
-    int satp = *(scheduler.process[next_id].stack + 8);
-    // print("SATP: ", satp);
+    int satp = *(scheduler.process[next_id].stack + 16);
+    print("SATP: ", satp);
 
     // do context switch
     scheduler.current_id = next_id;
-    after_context_switch(&scheduler.process[current_id].stack, &scheduler.process[next_id].stack);
+
+//    asm("mv a2, ra");
+    after_context_switch(
+            &scheduler.process[current_id].stack,
+            &scheduler.process[next_id].stack);
 }
 
 void create_process(void (*process_entry)(void), uint64_t satp) {
@@ -68,14 +82,22 @@ void create_process(void (*process_entry)(void), uint64_t satp) {
     // push arguments to the stack
     *scheduler.process[id].stack-- = (uint64_t) process_entry;                  // PC
     *scheduler.process[id].stack-- = satp;                                      // SATP
-    *scheduler.process[id].stack-- = 0;                                        // s0
-    *scheduler.process[id].stack-- = 0;                                        // s1
-    *scheduler.process[id].stack-- = 0;                                        // a0
-    *scheduler.process[id].stack-- = 0;                                        // a1
-    *scheduler.process[id].stack-- = 0;                                        // a2
-    *scheduler.process[id].stack-- = 0;                                        // a3
+    *scheduler.process[id].stack-- = 0;                                        // t6
+    *scheduler.process[id].stack-- = 0;                                        // t5
+    *scheduler.process[id].stack-- = 0;                                        // t4
+    *scheduler.process[id].stack-- = 0;                                        // t3
+    *scheduler.process[id].stack-- = 0;                                        // t2
+    *scheduler.process[id].stack-- = 0;                                        // t1
+    *scheduler.process[id].stack-- = 0;                                        // t0
+    *scheduler.process[id].stack-- = 0;                                        // a7
+    *scheduler.process[id].stack-- = 0;                                        // a6
+    *scheduler.process[id].stack-- = 0;                                        // a5
     *scheduler.process[id].stack-- = 0;                                        // a4
-    *scheduler.process[id].stack = 0;
+    *scheduler.process[id].stack-- = 0;                                        // a3
+    *scheduler.process[id].stack-- = 0;                                        // a2
+    *scheduler.process[id].stack-- = 0;                                        // a1
+    *scheduler.process[id].stack-- = 0;                                        // a0
+    *scheduler.process[id].stack = 0;                                          // ra
 
     // increase scheduler process length
     scheduler.length++;

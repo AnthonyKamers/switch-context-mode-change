@@ -2,6 +2,7 @@
 .global asm_trap_vector
 .option norvc
 asm_trap_vector:
+    jal     switch_kernel_stack
 
     # Save registers
     addi 	sp, sp, -128	# Make some space in the stack
@@ -22,10 +23,10 @@ asm_trap_vector:
     sd 	t5, 112(sp)	# Temporary
     sd 	t6, 120(sp)	# Temporary
 
-    csrrw   t6, mscratch, t6
+    #csrrw   t6, mscratch, t6
 
-    mv      t5, t6
-    csrr    t6, mscratch
+    #mv      t5, t6
+    #csrr    t6, mscratch
 
 	csrr	a0, mepc	    # Machine exception pc
 	csrr	a1, mtval	    # Machine bad address or instruction
@@ -60,7 +61,6 @@ asm_trap_vector:
     ld	 t4, 104(sp)	# Temporary
     ld	 t5, 112(sp)	# Temporary
     ld	 t6, 120(sp)	# Temporary
-
     addi sp, sp, 128
 
     # return to "normal" execution (handled by the trap)

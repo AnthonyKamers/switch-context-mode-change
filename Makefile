@@ -33,6 +33,7 @@ default:
 	-fvisibility=hidden -nostdlib -nostartfiles -T $(LINKER) -o $(FILE).bin \
 	$(SOURCES_ASM) $(SOURCES_H) $(SOURCES_C) $(SOURCES_MMU_H) $(SOURCES_MMU) \
 	$(LIB) -w
+	$(RISCV64)objdump -D $(FILE).bin > $(FILE).list
 
 start:
 	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin
