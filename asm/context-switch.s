@@ -113,8 +113,8 @@ after_context_switch:
     sd      sp, 0(a0)
 
     # load sp from PCB of new process
-    #mv      sp, a1
-    ld      sp, 0(a1)
+    mv      sp, a1
+    #ld      sp, 0(a1)
     ld      t0, 128(sp)  # load satp that was saved previously
 
     # write satp

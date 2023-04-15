@@ -6,7 +6,7 @@
 #include "../mmu/kmem.h"
 #include "../mmu/cache.h"
 
-#define MAX_PROCESSES 2
+#define MAX_PROCESSES 3
 #define MAX_STACK 1024
 #define NEXT_PROCESS(i) (i + 1 % MAX_PROCESSES)
 
@@ -46,6 +46,9 @@ extern "C" void init_kernel_stack(volatile uint64_t * satp) {
 }
 
 extern "C" void init_process() {
+    asm("la t0, 0x0");
+    asm("mv sp, t0");
+
     const int main_id = 0;
     scheduler.length = 1;
     scheduler.current_id = main_id;
@@ -58,8 +61,7 @@ extern "C" void schedule() {
     int next_id = NEXT_PROCESS(current_id);
 
     // current sp (old process)
-    uint64_t* sp;
-    get_sp(sp);
+    volatile uint64_t * sp = get_sp() + 4;
     scheduler.process[next_id].stack = sp;
 
     // print SATP of next process

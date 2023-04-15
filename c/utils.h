@@ -16,15 +16,15 @@ static uint64_t char_to_satp(char * value) {
     return ((uint64_t)value >> 12)  | (8 << 60);
 }
 
-//static volatile uint64_t * get_sp() {
-//    volatile uint64_t * sp_now;
-//    asm volatile("mv %0, sp" : "=r"(sp_now));
-//    return sp_now;
-//}
-
-static volatile void get_sp(uint64_t * sp_now) {
+static volatile uint64_t * get_sp() {
+    volatile uint64_t * sp_now;
     asm volatile("mv %0, sp" : "=r"(sp_now));
+    return sp_now;
 }
+
+//static volatile void get_sp(uint64_t * sp_now) {
+//    asm volatile("mv %0, sp" : "=r"(sp_now));
+//}
 
 static void set_sp(uint64_t sp_value) {
     asm volatile("mv sp, a0");

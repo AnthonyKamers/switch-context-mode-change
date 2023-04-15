@@ -194,7 +194,7 @@ char* zalloc(uint64_t pages) {
 }
 
 uint64_t make_process_pagetable() {
-    char * page_allocated = zalloc(64);
+    char * page_allocated = zalloc(96);
     uint64_t satp_transfer = char_to_satp(page_allocated);
     return satp_transfer;
 }
