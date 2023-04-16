@@ -137,6 +137,35 @@ _start:
     # sret will put us in supervisor mode and re-enable interrupts
     mret
 
+# a0 = stack
+# a1 = process_entry
+# a2 = satp
+.global asm_create_process
+asm_create_process:
+    #addi    a0, a0, -144
+    #sd      zero, 0(a0)    # t6
+    #sd      zero, 8(a0)    # t5
+    #sd      zero, 16(a0)    # t4
+    #sd      zero, 24(a0)    # t3
+    #sd      zero, 32(a0)    # t2
+    #sd      zero, 40(a0)    # t1
+    #sd      zero, 48(a0)    # t0
+    #sd      zero, 56(a0)    # a7
+    #sd      zero, 64(a0)    # a6
+    #sd      zero, 72(a0)    # a5
+    #sd      zero, 80(a0)    # a4
+    #sd      zero, 88(a0)    # a3
+    #sd      zero, 96(a0)    # a2
+    #sd      zero, 104(a0)    # a1
+    #sd      zero, 112(a0)    # a0
+    #sd      zero, 120(a0)    # ra
+    #sd      a1, 128(a0)       # process entry
+    #sd      a2, 136(a0)       # satp
+    addi    a0, a0, -4
+    sw      a1, 0(a0)       # process entry (PC)
+    sw      a2, 4(a0)       # satp
+    ret
+
 .global halt
 halt:
     wfi

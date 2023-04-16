@@ -12,7 +12,8 @@
 
 extern "C" void halt();
 extern char* KERNEL_TABLE;
-extern "C" void after_context_switch(volatile uint64_t **from_sp, volatile uint64_t **to_sp);
+extern "C" void after_context_switch(volatile uint64_t *from_sp, volatile uint64_t *to_sp);
+extern "C" void asm_create_process(volatile uint64_t * stack, uint64_t process_entry, uint64_t satp);
 
 // PCB
 typedef struct stack {
@@ -62,44 +63,27 @@ extern "C" void schedule() {
 
     // current sp (old process)
     volatile uint64_t * sp = get_sp() + 4;
-    scheduler.process[next_id].stack = sp;
+    scheduler.process[current_id].stack = sp;
 
     // print SATP of next process
-    int satp = *(scheduler.process[next_id].stack + 16);
-    print("SATP: ", satp);
+//    int satp = *(scheduler.process[next_id].stack + 16);
+//    print("SATP: ", satp);
 
     // do context switch
     scheduler.current_id = next_id;
 
 //    asm("mv a2, ra");
     after_context_switch(
-            &scheduler.process[current_id].stack,
-            &scheduler.process[next_id].stack);
+            scheduler.process[current_id].stack,
+            scheduler.process[next_id].stack);
 }
 
 void create_process(void (*process_entry)(void), uint64_t satp) {
     unsigned int id = scheduler.length;
     scheduler.process[id].stack = scheduler.process[id].stack_base + (MAX_STACK - 1);
 
-    // push arguments to the stack
-    *scheduler.process[id].stack-- = (uint64_t) process_entry;                  // PC
-    *scheduler.process[id].stack-- = satp;                                      // SATP
-    *scheduler.process[id].stack-- = 0;                                        // t6
-    *scheduler.process[id].stack-- = 0;                                        // t5
-    *scheduler.process[id].stack-- = 0;                                        // t4
-    *scheduler.process[id].stack-- = 0;                                        // t3
-    *scheduler.process[id].stack-- = 0;                                        // t2
-    *scheduler.process[id].stack-- = 0;                                        // t1
-    *scheduler.process[id].stack-- = 0;                                        // t0
-    *scheduler.process[id].stack-- = 0;                                        // a7
-    *scheduler.process[id].stack-- = 0;                                        // a6
-    *scheduler.process[id].stack-- = 0;                                        // a5
-    *scheduler.process[id].stack-- = 0;                                        // a4
-    *scheduler.process[id].stack-- = 0;                                        // a3
-    *scheduler.process[id].stack-- = 0;                                        // a2
-    *scheduler.process[id].stack-- = 0;                                        // a1
-    *scheduler.process[id].stack-- = 0;                                        // a0
-    *scheduler.process[id].stack = 0;                                          // ra
+    // add first information into the stack (basically containing only PC and SATP)
+    asm_create_process(scheduler.process[id].stack, (uint64_t)process_entry, satp);
 
     // increase scheduler process length
     scheduler.length++;

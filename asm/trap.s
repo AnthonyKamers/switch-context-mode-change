@@ -2,26 +2,29 @@
 .global asm_trap_vector
 .option norvc
 asm_trap_vector:
-    jal     switch_kernel_stack
+    #jal     switch_kernel_stack
 
     # Save registers
-    addi 	sp, sp, -128	# Make some space in the stack
-    sd 	ra, 0(sp)	# Return address
-    sd 	a0, 8(sp)	# Function argument / return value
-    sd 	a1, 16(sp)	# Function argument / return value
-    sd 	a2, 24(sp)	# Function argument
-    sd 	a3, 32(sp)	# Function argument
-    sd 	a4, 40(sp)	# Function argument
-    sd 	a5, 48(sp)	# Function argument
-    sd 	a6, 56(sp)	# Function argument
-    sd 	a7, 64(sp)	# Function argument
-    sd 	t0, 72(sp)	# Temporary / alternate return address
-    sd 	t1, 80(sp)	# Temporary
-    sd 	t2, 88(sp)	# Temporary
-    sd 	t3, 96(sp)	# Temporary
-    sd 	t4, 104(sp)	# Temporary
-    sd 	t5, 112(sp)	# Temporary
-    sd 	t6, 120(sp)	# Temporary
+    #addi 	sp, sp, -8	# Make some space in the stack
+    #sd 	ra, 0(sp)	# Return address
+    #sd 	a0, 8(sp)	# Function argument / return value
+    #sd 	a1, 16(sp)	# Function argument / return value
+    #sd 	a2, 24(sp)	# Function argument
+    #sd 	a3, 32(sp)	# Function argument
+    #sd 	a4, 40(sp)	# Function argument
+    #sd 	a5, 48(sp)	# Function argument
+    #sd 	a6, 56(sp)	# Function argument
+    #sd 	a7, 64(sp)	# Function argument
+    #sd 	t0, 72(sp)	# Temporary / alternate return address
+    #sd 	t1, 80(sp)	# Temporary
+    #sd 	t2, 88(sp)	# Temporary
+    #sd 	t3, 96(sp)	# Temporary
+    #sd 	t4, 104(sp)	# Temporary
+    #sd 	t5, 112(sp)	# Temporary
+    #sd 	t6, 120(sp)	# Temporary
+
+    #csrr    a0, mepc
+    jal     before_context_switch
 
     #csrrw   t6, mscratch, t6
 
