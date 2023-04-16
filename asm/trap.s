@@ -24,7 +24,7 @@ asm_trap_vector:
     #sd 	t6, 120(sp)	# Temporary
 
     #csrr    a0, mepc
-    jal     before_context_switch
+    jal     timer_handler
 
     #csrrw   t6, mscratch, t6
 

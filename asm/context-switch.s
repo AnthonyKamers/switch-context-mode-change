@@ -101,4 +101,7 @@ after_context_switch:
     # adjust stack pointer
     #addi    sp, sp, 8
     #ld      t0, 0(sp)   # load process PC
+    csrr    t0, mstatus
+    ori     t0, t0, (1 << 3)
+    csrw    mstatus, t0
     jr      t1

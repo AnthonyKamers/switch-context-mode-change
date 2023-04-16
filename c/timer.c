@@ -15,8 +15,7 @@ extern "C" void init_timer() {
     *mtimecmp = *mtime + (TIMER_INTERRUPTION_SECONDS * 10000000);
 }
 
-uint64_t timer_handler(uint64_t epc) {
-    uint64_t return_pc = epc;
+extern "C" void timer_handler() {
 
     // disable machine-mode timer interrupts
     set_mie(~((~get_mie()) | MIE_MTIE));
@@ -25,13 +24,10 @@ uint64_t timer_handler(uint64_t epc) {
     const char * message = "Timer count: ";
     print(message, ++timer_count);
 
-    // call schedule function here
-    asm("jal before_context_switch");
-
     // enable machine-mode timer interrupts
-    init_timer();
     set_mie(get_mie() | MIE_MTIE);
+    init_timer();
 
-    // temporary return_pc
-    return return_pc - 4;
+    // call schedule function here
+     asm("jal before_context_switch");
 }

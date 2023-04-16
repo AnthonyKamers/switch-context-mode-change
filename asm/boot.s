@@ -73,10 +73,6 @@ _start:
     li		t0, (0b11 << 11) | (1 << 8) | (1 << 5) | (1 << 7) | (1 << 3)
     csrw	mstatus, t0
 
-    # set the MTIME interval to 1 second (qemu does not implement)
-    # li      t0, 0x1000000
-    # csrw    mtimecmp, t0
-
     # Setting `mideleg` (machine interrupt delegate) register:
     # 1 << 1   : Software interrupt delegated to supervisor mode
     # 1 << 5   : Timer interrupt delegated to supervisor mode

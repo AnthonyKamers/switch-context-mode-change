@@ -46,4 +46,8 @@ static uint64_t get_mstatus() {
     return mstatus_now;
 }
 
+static void set_mstatus(uint64_t mstatus) {
+    asm volatile("csrw mstatus, a0");
+}
+
 #endif //SWITCH_CONTEXT_MACHINE_MODE_UTILS_H

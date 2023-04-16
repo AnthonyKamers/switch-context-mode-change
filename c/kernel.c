@@ -91,14 +91,18 @@ void create_process(void (*process_entry)(void), uint64_t satp) {
 
 void process1_entry(void) {
     const char * message = "process1";
-    while (TRUE)
+    while (TRUE) {
         print(message);
+        halt();
+    }
 }
 
 void process2_entry(void) {
-    const char * message = "process2";
-    while (TRUE)
+    const char * message = "process2\n";
+    while (TRUE) {
         print(message);
+        halt();
+    }
 }
 
 //void make_process() {
