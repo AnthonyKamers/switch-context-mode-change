@@ -24,7 +24,21 @@ asm_trap_vector:
     #sd 	t6, 120(sp)	# Temporary
 
     #csrr    a0, mepc
+
+    mv      t1, ra
+    addi    t1, t1, -4      # adjust return address (future PC to the previous instruction)
+
+    jal     switch_kernel_stack
+
     jal     timer_handler
+
+    csrr    t0, satp
+
+    addi    sp, sp, -8
+    sw      t1, 0(sp)       # save PC - 4
+    sw      t0, 4(sp)       # save SATP
+
+    jal     before_context_switch
 
     #csrrw   t6, mscratch, t6
 

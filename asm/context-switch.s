@@ -56,12 +56,29 @@ before_context_switch:
     #sd 	t5, 112(sp)	# Temporary
     #sd 	t6, 120(sp)	# Temporary
 
-    j schedule
+    # kernel stack
+    lwu     t0, 0(sp)   # load ra (PC on the next round-robin schedule)
+    lw      t1, 4(sp)   # load satp
+    addi    sp, sp, 8
+
+    # user stack (push info into that)
+    jal     switch_user_stack
+    addi    sp, sp, 8
+    sd      t1, 0(sp)   # store PC
+    sd      t0, 4(sp)   # store satp
+
+    # jal     switch_kernel_stack
+    j       schedule
 
 # a0 = old context
 # a1 = new context
 .global after_context_switch
 after_context_switch:
+    # enable timer interruptions again
+    #csrr    t0, mstatus
+    #ori     t0, t0, (1 << 3)
+    #csrw    mstatus, t0
+
     # store sp into PCB of old process
     # sd      sp, 0(a0)
 
@@ -71,10 +88,9 @@ after_context_switch:
 
     #ld      t0, 4(sp)   # load pc
 
-    lw      t0, 0(sp)  # load satp that was saved previously
-    addi    sp, sp, -4
-    lwu      t1, 0(sp)  # load pc
-    addi    sp, sp, -4
+    lw      t0, -4(sp)  # load satp that was saved previously
+    lwu     t1, -8(sp)  # load pc
+    addi    sp, sp, -8
 
     # write satp
     csrw    satp, t0    # load the new page table
@@ -101,7 +117,6 @@ after_context_switch:
     # adjust stack pointer
     #addi    sp, sp, 8
     #ld      t0, 0(sp)   # load process PC
-    csrr    t0, mstatus
-    ori     t0, t0, (1 << 3)
-    csrw    mstatus, t0
+
+    # go to process function
     jr      t1

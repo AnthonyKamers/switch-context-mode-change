@@ -6,7 +6,7 @@
 #define TIMER_INTERRUPTION_SECONDS 1
 #define MAX_EXECUTION_TIME 10
 
-static int timer_count = 0;
+// static int timer_count = 0;
 
 extern "C" void init_timer() {
     volatile uint64* mtimecmp= reinterpret_cast<uint64*>(MTIMECMP);
@@ -21,13 +21,15 @@ extern "C" void timer_handler() {
     set_mie(~((~get_mie()) | MIE_MTIE));
 
     // print how many times it was scheduled
-    const char * message = "Timer count: ";
-    print(message, ++timer_count);
+    //const char * message = "Timer count: ";
+    //print(message, ++timer_count);
 
     // enable machine-mode timer interrupts
     set_mie(get_mie() | MIE_MTIE);
     init_timer();
 
+    set_mstatus(get_mstatus() | MIE_MSIE);
+
     // call schedule function here
-     asm("jal before_context_switch");
+    // asm("jal before_context_switch");
 }

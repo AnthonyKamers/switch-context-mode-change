@@ -117,7 +117,7 @@ _start:
     # kinit() is required to return back the SATP value (including MODE) via a0
     csrw	satp, a0
 
-    # configure kernel stack pointer (and satp)
+    # configure kernel stack pointer
     jal     init_kernel_stack
 
     # init timer
@@ -157,7 +157,7 @@ asm_create_process:
     #sd      zero, 120(a0)    # ra
     #sd      a1, 128(a0)       # process entry
     #sd      a2, 136(a0)       # satp
-    addi    a0, a0, -4
+    addi    a0, a0, -8
     sw      a1, 0(a0)       # process entry (PC)
     sw      a2, 4(a0)       # satp
     ret

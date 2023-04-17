@@ -1,6 +1,7 @@
 #include "config.h"
 #include "print.h"
 #include "utils.h"
+#include "timer.h"
 #include "../mmu/mmu.h"
 #include "../mmu/mem.h"
 #include "../mmu/kmem.h"
@@ -8,7 +9,6 @@
 
 #define MAX_PROCESSES 3
 #define MAX_STACK 1024
-#define NEXT_PROCESS(i) (i + 1 % MAX_PROCESSES)
 
 extern "C" void halt();
 extern char* KERNEL_TABLE;
@@ -40,8 +40,7 @@ extern "C" void switch_user_stack() {
     asm("mv sp, %0" : : "r"(scheduler.process[scheduler.current_id].stack):);
 }
 
-extern "C" void init_kernel_stack(volatile uint64_t * satp) {
-    kernel_stack.satp = satp;
+extern "C" void init_kernel_stack() {
     kernel_stack.stack = kernel_stack.stack_base + (MAX_STACK - 1);
     asm("mv sp, %0" : : "r"(kernel_stack.stack):);
 }
@@ -59,7 +58,10 @@ extern "C" void init_process() {
 
 extern "C" void schedule() {
     int current_id = scheduler.current_id;
-    int next_id = NEXT_PROCESS(current_id);
+    int next_id = current_id + 1;
+
+    // round-robin: circular queue
+    if (next_id >= scheduler.length) next_id = 1;
 
     // current sp (old process)
     volatile uint64_t * sp = get_sp() + 4;
@@ -71,6 +73,8 @@ extern "C" void schedule() {
 
     // do context switch
     scheduler.current_id = next_id;
+
+//    enable_timer_interruption();
 
 //    asm("mv a2, ra");
     after_context_switch(
@@ -90,7 +94,7 @@ void create_process(void (*process_entry)(void), uint64_t satp) {
 }
 
 void process1_entry(void) {
-    const char * message = "process1";
+    const char * message = "process1\n";
     while (TRUE) {
         print(message);
         halt();
