@@ -1,122 +1,80 @@
 .global before_context_switch
 before_context_switch:
     # kernel stack
-    #ld      t0, 0(sp)   # load ra (return address from stack)
-    #addi    sp, sp, 8   # remove space on the stack (pop the ra)
-    #addi    t0, t0, -4  # adjust ra to previous instruction
-
-    #csrr    t1, mepc    # save mepc to t1
-
-    # switch to user stack
-    #jal     switch_user_stack
-    #csrr    t2, satp    # read current satp (page table)
-
-    # push info to user stack
-    #addi    sp, sp, -24
-    #sd      t0, 0(sp)   # save ra
-    #sd      t1, 8(sp)   # save mepc
-    #sd      t2, 16(sp)  # save satp
-
-    # switch to kernel stack (to restore arguments and pop from stack)
-    #jal     switch_kernel_stack
-    #ld	 a0, 0(sp)	    # Function argument / return value
-    #ld	 a1, 8(sp)	    # Function argument / return value
-    #ld	 a2, 16(sp)	    # Function argument
-    #ld	 a3, 24(sp)	    # Function argument
-    #ld	 a4, 32(sp)	    # Function argument
-    #ld	 a5, 40(sp)	    # Function argument
-    #ld	 a6, 48(sp)	    # Function argument
-    #ld	 a7, 56(sp)	    # Function argument
-    #ld	 t0, 64(sp)	    # Temporary / alternate return address
-    #ld	 t1, 72(sp)	    # Temporary
-    #ld	 t2, 80(sp)	    # Temporary
-    #ld	 t3, 88(sp)	    # Temporary
-    #ld	 t4, 96(sp)	    # Temporary
-    #ld	 t5, 104(sp)	# Temporary
-    #ld	 t6, 112(sp)	# Temporary
-    #addi    sp, sp, 120
-
-    # switch to user stack (to save the previous context)
-    #jal     switch_user_stack
-    #addi 	sp, sp, -136	# Make some space in the stack
-    #sd 	ra, 0(sp)	# Return address
-    #sd 	a0, 8(sp)	# Function argument / return value
-    #sd 	a1, 16(sp)	# Function argument / return value
-    #sd 	a2, 24(sp)	# Function argument
-    #sd 	a3, 32(sp)	# Function argument
-    #sd 	a4, 40(sp)	# Function argument
-    #sd 	a5, 48(sp)	# Function argument
-    #sd 	a6, 56(sp)	# Function argument
-    #sd 	a7, 64(sp)	# Function argument
-    #sd 	t0, 72(sp)	# Temporary / alternate return address
-    #sd 	t1, 80(sp)	# Temporary
-    #sd 	t2, 88(sp)	# Temporary
-    #sd 	t3, 96(sp)	# Temporary
-    #sd 	t4, 104(sp)	# Temporary
-    #sd 	t5, 112(sp)	# Temporary
-    #sd 	t6, 120(sp)	# Temporary
-
-    # kernel stack
-    lwu     t0, 0(sp)   # load ra (PC on the next round-robin schedule)
-    lw      t1, 4(sp)   # load satp
-    addi    sp, sp, 8
+    ld     s0, 0(sp)   # load ra (PC on the next round-robin schedule)
+    ld      s1, 8(sp)   # load satp
+    ld      a0, 16(sp)   # load a0
+    ld      a1, 24(sp)   # load a1
+    ld      a2, 32(sp)   # load a2
+    ld      a3, 40(sp)   # load a3
+    ld      a4, 48(sp)   # load a4
+    ld      a5, 56(sp)   # load a5
+    ld      a6, 64(sp)   # load a6
+    ld      a7, 72(sp)   # load a7
+    ld      t0, 80(sp)   # load t0
+    ld      t1, 88(sp)   # load t1
+    ld      t2, 96(sp)   # load t2
+    ld      t3, 104(sp)   # load t3
+    ld      t4, 112(sp)   # load t4
+    ld      t5, 120(sp)   # load t5
+    ld      t6, 128(sp)   # load t6
+    addi    sp, sp, 136
 
     # user stack (push info into that)
     jal     switch_user_stack
-    addi    sp, sp, 8
-    sd      t1, 0(sp)   # store PC
-    sd      t0, 4(sp)   # store satp
+    addi    sp, sp, -136
+    sd      s0, 0(sp)   # store PC
+    sd      s1, 8(sp)   # store satp
+    sd      a0, 16(sp)   # store a0
+    sd      a1, 24(sp)   # store a1
+    sd      a2, 32(sp)   # store a2
+    sd      a3, 40(sp)   # store a3
+    sd      a4, 48(sp)   # store a4
+    sd      a5, 56(sp)   # store a5
+    sd      a6, 64(sp)   # store a6
+    sd      a7, 72(sp)   # store a7
+    sd      t0, 80(sp)   # store t0
+    sd      t1, 88(sp)   # store t1
+    sd      t2, 96(sp)   # store t2
+    sd      t3, 104(sp)   # store t3
+    sd      t4, 112(sp)   # store t4
+    sd      t5, 120(sp)   # store t5
+    sd      t6, 128(sp)   # store t6
 
-    # jal     switch_kernel_stack
     j       schedule
 
 # a0 = old context
 # a1 = new context
 .global after_context_switch
 after_context_switch:
-    # enable timer interruptions again
-    #csrr    t0, mstatus
-    #ori     t0, t0, (1 << 3)
-    #csrw    mstatus, t0
-
     # store sp into PCB of old process
-    # sd      sp, 0(a0)
+    sw      sp, 0(a0)
 
     # load sp from PCB of new process
     mv      sp, a1
-    #ld      sp, 0(a1)
 
-    #ld      t0, 4(sp)   # load pc
-
-    lw      t0, -4(sp)  # load satp that was saved previously
-    lwu     t1, -8(sp)  # load pc
-    addi    sp, sp, -8
+    # load PC and other registers
+    ld      s0, 0(sp)  # load pc
+    ld      s1, 8(sp)  # load satp that was saved previously
+    ld      a0, 16(sp)   # load a0
+    ld      a1, 24(sp)   # load a1
+    ld      a2, 32(sp)   # load a2
+    ld      a3, 40(sp)   # load a3
+    ld      a4, 48(sp)   # load a4
+    ld      a5, 56(sp)   # load a5
+    ld      a6, 64(sp)   # load a6
+    ld      a7, 72(sp)   # load a7
+    ld      t0, 80(sp)   # load t0
+    ld      t1, 88(sp)   # load t1
+    ld      t2, 96(sp)   # load t2
+    ld      t3, 104(sp)   # load t3
+    ld      t4, 112(sp)   # load t4
+    ld      t5, 120(sp)   # load t5
+    ld      t6, 128(sp)   # load t6
+    addi    sp, sp, 136
 
     # write satp
-    csrw    satp, t0    # load the new page table
-
-    # pop from the stack
-    #ld	 ra, 0(sp)	    # Return address
-    #ld	 a0, 8(sp)	    # Function argument / return value
-    #ld	 a1, 16(sp)	    # Function argument / return value
-    #ld	 a2, 24(sp)	    # Function argument
-    #ld	 a3, 32(sp)	    # Function argument
-    #ld	 a4, 40(sp)	    # Function argument
-    #ld	 a5, 48(sp)	    # Function argument
-    #ld	 a6, 56(sp)	    # Function argument
-    #ld	 a7, 64(sp)	    # Function argument
-    #ld	 t0, 72(sp)	    # Temporary / alternate return address
-    #ld	 t1, 80(sp)	    # Temporary
-    #ld	 t2, 88(sp)	    # Temporary
-    #ld	 t3, 96(sp)	    # Temporary
-    #ld	 t4, 104(sp)	# Temporary
-    #ld	 t5, 112(sp)	# Temporary
-    #ld	 t6, 120(sp)	# Temporary
-    #addi sp, sp, 128
-
-    # adjust stack pointer
-    #addi    sp, sp, 8
-    #ld      t0, 0(sp)   # load process PC
+    csrw    satp, s1    # load the new page table
 
     # go to process function
-    jr      t1
+    jr      s0

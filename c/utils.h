@@ -13,7 +13,7 @@ static void set_satp(uint64_t satp_value) {
 }
 
 static uint64_t char_to_satp(char * value) {
-    return ((uint64_t)value >> 12)  | (8 << 60);
+    return ((uint64_t)value >> 12)  | (8ULL << 60);
 }
 
 static volatile uint64_t * get_sp() {

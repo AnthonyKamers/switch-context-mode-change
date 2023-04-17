@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "mmu.h"
 
-#define TAKEN 1<< 63
+#define TAKEN 1ULL << 63
 
 
 typedef struct {

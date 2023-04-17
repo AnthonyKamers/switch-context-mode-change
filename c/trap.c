@@ -1,5 +1,6 @@
 #include "config.h"
 #include "print.h"
+#include "timer.h"
 
 extern "C" uint64 m_trap(uint64 mepc, uint64 mtval, uint64 mcause, uint64 mhart, uint64 mstatus) {
 	// O bit mais significativo da causa diz se é uma interrupção ou exceção.
@@ -19,7 +20,12 @@ extern "C" uint64 m_trap(uint64 mepc, uint64 mtval, uint64 mcause, uint64 mhart,
                 break;
             case 7:
                 msg = "Machine timer interrupt\n";
-//                return_pc = timer_handler(mepc);
+
+                // as it is a machine timer interrupt, we will
+                // transfer all the responsability to timer_handler
+                // which will jump directly in `after_context_switch`
+                timer_handler();
+
                 break;
             case 11:
                 msg = "Machine external interrupt\n";

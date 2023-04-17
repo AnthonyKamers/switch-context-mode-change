@@ -18,7 +18,6 @@ extern "C" void asm_create_process(volatile uint64_t * stack, uint64_t process_e
 // PCB
 typedef struct stack {
     volatile uint64_t * stack;
-    volatile uint64_t * satp;
     uint64_t stack_base[MAX_STACK];
 } process_t;
 
@@ -61,22 +60,15 @@ extern "C" void schedule() {
     int next_id = current_id + 1;
 
     // round-robin: circular queue
-    if (next_id >= scheduler.length) next_id = 1;
+    if (next_id >= scheduler.length) next_id = 0;
 
     // current sp (old process)
     volatile uint64_t * sp = get_sp() + 4;
     scheduler.process[current_id].stack = sp;
 
-    // print SATP of next process
-//    int satp = *(scheduler.process[next_id].stack + 16);
-//    print("SATP: ", satp);
-
     // do context switch
     scheduler.current_id = next_id;
 
-//    enable_timer_interruption();
-
-//    asm("mv a2, ra");
     after_context_switch(
             scheduler.process[current_id].stack,
             scheduler.process[next_id].stack);
@@ -86,7 +78,7 @@ void create_process(void (*process_entry)(void), uint64_t satp) {
     unsigned int id = scheduler.length;
     scheduler.process[id].stack = scheduler.process[id].stack_base + (MAX_STACK - 1);
 
-    // add first information into the stack (basically containing only PC and SATP)
+    // add first information into the stack
     asm_create_process(scheduler.process[id].stack, (uint64_t)process_entry, satp);
 
     // increase scheduler process length
@@ -109,13 +101,7 @@ void process2_entry(void) {
     }
 }
 
-//void make_process() {
-//    char * page_allocated = zalloc(64);
-//    uint64_t satp_transfer = char_to_satp(page_allocated);
-//    set_satp(satp_transfer);
-//}
-
-extern "C" int kinit() {
+extern "C" void kinit() {
     const char * message = "kinit\n";
     print(message);
 
@@ -142,12 +128,15 @@ extern "C" int kinit() {
     KERNEL_TABLE = (char*)root_ptr;
     uint64_t satp_kernel = char_to_satp(KERNEL_TABLE);
 
-    // make structure data to keep kernel data;
-//    kernel_stack.stack = get_sp();
-//    kernel_stack.satp = (volatile uint64_t *) satp_kernel;
+    // Force the CPU to take our SATP register.
+    // To be efficient, if the address space identifier (ASID) portion of SATP is already
+    // in cache, it will just grab whatever's in cache. However, that means if we've updated
+    // it in memory, it will be the old table. So, sfence.vma will ensure that the MMU always
+    // grabs a fresh copy of the SATP register and associated tables.
+    asm("sfence.vma");
 
-    // return the address of kernel table page (to satp)
-    return satp_kernel;
+    // set SATP
+    set_satp(satp_kernel);
 }
 
 extern "C" int main() {
