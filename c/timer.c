@@ -22,4 +22,6 @@ extern "C" void timer_handler() {
     init_timer();
 
     set_mstatus(get_mstatus() | MIE_MSIE);
+
+    asm("jal before_context_switch");
 }
