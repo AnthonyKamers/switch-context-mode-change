@@ -37,6 +37,16 @@ _start:
 	la      t1, kinit
 	csrw    mepc, t1
 
+	# Force the CPU to take our SATP register.
+    # To be efficient, if the address space identifier (ASID) portion of SATP is already
+    # in cache, it will just grab whatever's in cache. However, that means if we've updated
+    # it in memory, it will be the old table. So, sfence.vma will ensure that the MMU always
+    # grabs a fresh copy of the SATP register and associated tables.
+    sfence.vma
+
+    # kinit returns the table page
+    csrw    satp, a0
+
 	la	    t2, asm_trap_vector
 	csrw	mtvec, t2
 

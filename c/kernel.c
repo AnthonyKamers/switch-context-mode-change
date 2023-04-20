@@ -63,7 +63,7 @@ extern "C" void schedule() {
     if (next_id >= scheduler.length) next_id = 0;
 
     // current sp (old process)
-    volatile uint64_t * sp = get_sp() + 4;
+    volatile uint64_t * sp = get_sp() + 8;
     scheduler.process[current_id].stack = sp;
 
     // do context switch

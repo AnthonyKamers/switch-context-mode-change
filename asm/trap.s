@@ -10,7 +10,7 @@ asm_trap_vector:
     csrr    s1, satp
 
     addi    sp, sp, -136
-    sd      s0, 0(sp)       # save PC - 4
+    sd      s0, 0(sp)       # save PC - 8
     sd      s1, 4(sp)       # save SATP
     sd      a0, 16(sp)      # store a0
     sd      a1, 24(sp)      # store a1

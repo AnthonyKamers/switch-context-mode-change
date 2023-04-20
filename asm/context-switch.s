@@ -20,7 +20,6 @@ before_context_switch:
     ld      t6, 128(sp)   # load t6
     addi    sp, sp, 136
 
-    # user stack (push info into that)
     jal     switch_user_stack
     addi    sp, sp, -136
     sd      s0, 0(sp)   # store PC
