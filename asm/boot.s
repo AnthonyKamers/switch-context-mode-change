@@ -6,7 +6,7 @@ _start:
 	# Any hardware threads (hart) that are not bootstrapping
 	# need to wait for an IPI
 	csrr	t0, mhartid
-	bnez	t0, halt
+	beqz	t0, halt
 
 	# SATP should be zero, but let's make sure
 	csrw	satp, zero
@@ -30,50 +30,72 @@ _start:
 
 	# We use mret here so that the mstatus register
 	# is properly updated.
-	li	    t0, (0b11 << 11)
+	li	    t0, (0b01 << 11)
 	csrw	mstatus, t0
 
-	# load mmu
-	la      t1, kinit
-	csrw    mepc, t1
+	# set SUM (Supervisor User Memory access) to 1
+	li	    t1, (1 << 18)
+	csrw    sstatus, t1
 
-	# Force the CPU to take our SATP register.
+    # make machine trap vector
+	la	    t2, asm_trap_vector
+	csrw	mtvec, t2
+
+    # enable interruptions (Timer interrupt: 7)
+	# li	    t3, (1 << 3) | (1 << 7) | (1 << 11)
+	csrw	mie, 0
+
+	# set ALL interruptions and exceptions to supervisor
+	li      t4, 0xFFFF
+    csrw    mideleg, t4
+    csrw    medeleg, t4
+
+    # configure memory protection (necessary to enable supervisor mode) to all memory
+    csrw    pmpcfg0, 0b11111
+
+    li      t0, 0xFFFFFFFF
+    csrw    pmpaddr0, t0
+
+    # set next function to execute
+    la      t0, supervisor_entry
+    csrw    mepc, t0
+
+    # configure kernel stack pointer
+    jal     init_kernel_stack
+
+	# go to mepc (supervisor_entry)
+	mret
+
+supervisor_entry:
+    # load mmu
+    la      t1, kinit
+    csrw    sepc, t1
+
+    # set the return address (from kinit)
+    la	    ra, supervisor_setup
+
+    # make supervisor trap vector
+    la	    t2, asm_supervisor_trap
+    csrw	stvec, t2
+
+    # jump to kinit
+    sret
+
+supervisor_setup:
+    # kinit returns the table page
+    csrw    satp, a0
+
+    # Force the CPU to take our SATP register.
     # To be efficient, if the address space identifier (ASID) portion of SATP is already
     # in cache, it will just grab whatever's in cache. However, that means if we've updated
     # it in memory, it will be the old table. So, sfence.vma will ensure that the MMU always
     # grabs a fresh copy of the SATP register and associated tables.
     sfence.vma
 
-    # kinit returns the table page
-    csrw    satp, a0
-
-	la	    t2, asm_trap_vector
-	csrw	mtvec, t2
-
-	li	    t3, (1 << 3) | (1 << 7) | (1 << 11)
-	csrw	mie, t3
-
-    # set the return address (from kinit)
-	la	    ra, 3f
-
-	# go to mepc (kinit)
-	mret
-
-3:
-    # 1 << 3    : Machine Interruption Enable (MIE)
-    # 1 << 7    : Machine Previous Interruption Enabled MPIE
-    li		t0, (0b11 << 11) | (1 << 7) | (1 << 3)
-    csrw	mstatus, t0
-
-    # 1 << 1   : Software interrupt
-    # 1 << 5   : Timer interrup
-    # 1 << 9   : External interrupt delegated
-    # 1 << 7   : Timer Interrupt
-    li		t2, (1 << 1) | (1 << 5) | (1 << 9) | (1 << 7)
-    csrw	mie, t2
-
-    # configure kernel stack pointer
-    jal     init_kernel_stack
+    # 1 << 8  = SPP: Supervisor Previous Privilege (keeps the supervisor mode)
+    # 1 << 18 = SUM: Allow Supervisor User Memory access (in order to make new Thread and not new (SYSTEM) Thread) -> This must be changed for other exercises
+    li		t0, (1 << 8 | 1 << 18)
+    csrw	sstatus, t0
 
     # init timer
     jal     init_timer
@@ -83,10 +105,10 @@ _start:
 
     # configure main as return address
     la		t1, main
-    csrw	mepc, t1
+    csrw	sepc, t1
 
     # return to main
-    mret
+    sret
 
 # a0 = stack
 # a1 = process_entry

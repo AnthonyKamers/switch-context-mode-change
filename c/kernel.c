@@ -101,9 +101,9 @@ void process2_entry(void) {
     }
 }
 
-extern "C" void kinit() {
+extern "C" uint64_t kinit() {
     const char * message = "kinit\n";
-    print(message);
+    // print(message);
 
     // page table initialization
     page_init();
@@ -128,15 +128,7 @@ extern "C" void kinit() {
     KERNEL_TABLE = (char*)root_ptr;
     uint64_t satp_kernel = char_to_satp(KERNEL_TABLE);
 
-    // Force the CPU to take our SATP register.
-    // To be efficient, if the address space identifier (ASID) portion of SATP is already
-    // in cache, it will just grab whatever's in cache. However, that means if we've updated
-    // it in memory, it will be the old table. So, sfence.vma will ensure that the MMU always
-    // grabs a fresh copy of the SATP register and associated tables.
-    asm("sfence.vma");
-
-    // set SATP
-    set_satp(satp_kernel);
+    return satp_kernel;
 }
 
 extern "C" int main() {

@@ -15,17 +15,17 @@ QEMU=qemu-system-riscv64
 
 ########################### sifive_u ###########################
 #FLAGS_GCC:=-march=rv64gc -mabi=lp64d -Wl, -mno-relax -mcmodel=medany
-#MACHINE=sifive_u
-#CPUS=2
-#LIB=
-#FLAGS_QEMU=-ex "target extended-remote:1234" -ex "add-inferior" -ex "inferior 2" -ex "attach 2"
+MACHINE=sifive_u
+CPUS=2
+LIB= -lgcc
+FLAGS_QEMU=-ex "target extended-remote:1234" -ex "add-inferior" -ex "inferior 2" -ex "attach 2"
 
 ########################### virt ###########################
 FLAGS_GCC:=-march=rv64g -mabi=lp64d -static -mcmodel=medany
-MACHINE=virt
-CPUS=1
-LIB= -lgcc
-FLAGS_QEMU=-ex "target remote:1234"
+#MACHINE=virt
+#CPUS=1
+#LIB= -lgcc
+#FLAGS_QEMU=-ex "target remote:1234"
 
 
 default:
@@ -42,7 +42,7 @@ clean:
 	@rm -f *.bin
 
 debug:
-	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin \
+	$(QEMU) -nographic -machine $(MACHINE) -smp $(CPUS) -bios none -kernel $(FILE).bin -D $(FILE).log -d int,mmu \
 	-gdb tcp::1234 -S & $(TERMINAL) $(RISCV64)gdb $(FLAGS_QEMU) \
 	-ex "set confirm off" \
 	-ex "add-symbol-file ./$(FILE).bin 0x80000000"
