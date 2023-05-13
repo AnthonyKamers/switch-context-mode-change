@@ -103,7 +103,7 @@ void process2_entry(void) {
 
 extern "C" uint64_t kinit() {
     const char * message = "kinit\n";
-    // print(message);
+     print(message);
 
     // page table initialization
     page_init();
